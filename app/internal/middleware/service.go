@@ -11,7 +11,7 @@ type Service struct {
 	logger logging.Logger
 }
 
-func (s *Service) GetRoleByToken(ctx context.Context, token Token) (Role, error) {
+func (s *Service) GetRoleByToken(ctx context.Context, token Token) (UserIDRoleDTO, error) {
 	return s.repo.GetRoleByToken(ctx, token)
 }
 

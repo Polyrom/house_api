@@ -12,17 +12,17 @@ type repository struct {
 	l      logging.Logger
 }
 
-func (r *repository) GetRoleByToken(ctx context.Context, token Token) (Role, error) {
-	q := `SELECT u.role
+func (r *repository) GetRoleByToken(ctx context.Context, token Token) (UserIDRoleDTO, error) {
+	q := `SELECT u.id, u.role
 				FROM tokens t
   			JOIN users u ON t.user_id = u.id
 				WHERE t.token = $1;`
-	var role string
-	err := r.client.QueryRow(ctx, q, token).Scan(&role)
+	var userIDRole UserIDRoleDTO
+	err := r.client.QueryRow(ctx, q, token).Scan(&userIDRole.ID, &userIDRole.Role)
 	if err != nil {
-		return Role(""), err
+		return UserIDRoleDTO{}, err
 	}
-	return Role(role), nil
+	return userIDRole, nil
 }
 
 func NewRepository(c postgres.Client, l logging.Logger) Repository {

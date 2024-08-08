@@ -2,6 +2,7 @@ package flat
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/Polyrom/houses_api/pkg/client/postgres"
@@ -61,6 +62,32 @@ func (r *repository) GetByHouseIDModerator(ctx context.Context, fl FlatID) ([]Fl
 	return fls, nil
 }
 
+func (r *repository) GetByID(ctx context.Context, fl GetFlatByIDDTO) (FlatDTO, error) {
+	q := `SELECT 
+					id, house_id, price, rooms, moderator, status 
+				FROM 
+					flats 
+				WHERE id = $1
+				AND house_id = $2`
+	var fdto FlatDTO
+	var modid sql.NullString
+	err := r.client.QueryRow(ctx, q, fl.ID, fl.HouseID).
+		Scan(&fdto.ID, &fdto.HouseID, &fdto.Price, &fdto.Rooms, &modid, &fdto.Status)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.Is(err, pgErr) {
+			pgErr = err.(*pgconn.PgError)
+			r.logger.Errorf("SQL Error: %s, Detail: %s, Where: %s", pgErr.Message, pgErr.Detail, pgErr.Where)
+			return FlatDTO{}, pgErr
+		}
+		return FlatDTO{}, err
+	}
+	if modid.Valid {
+		fdto.Moderator = modid.String
+	}
+	return fdto, nil
+}
+
 func (r *repository) Create(ctx context.Context, fl CreateFlatDTO) (FlatDTO, error) {
 	q := `INSERT INTO flats 
 					(house_id, price, rooms) 
@@ -92,6 +119,28 @@ func (r *repository) Update(ctx context.Context, fl UpdateFlatStatusDTO) (FlatDT
 					id, house_id, price, rooms, status`
 	var f FlatDTO
 	err := r.client.QueryRow(ctx, q, fl.Status, fl.ID, fl.HouseID).Scan(&f.ID, &f.HouseID, &f.Price, &f.Rooms, &f.Status)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.Is(err, pgErr) {
+			pgErr = err.(*pgconn.PgError)
+			r.logger.Errorf("SQL Error: %s, Detail: %s, Where: %s", pgErr.Message, pgErr.Detail, pgErr.Where)
+			return f, pgErr
+		}
+		return f, err
+	}
+	return f, nil
+}
+
+func (r *repository) UpdateWithNewMod(ctx context.Context, uid string, fl UpdateFlatStatusDTO) (FlatDTO, error) {
+	q := `UPDATE flats 
+				SET status = $1, moderator = $2
+				WHERE id = $3
+				AND house_id = $4
+				RETURNING 
+				id, house_id, price, rooms, status`
+	var f FlatDTO
+	err := r.client.QueryRow(ctx, q, fl.Status, uid, fl.ID, fl.HouseID).
+		Scan(&f.ID, &f.HouseID, &f.Price, &f.Rooms, &f.Status)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.Is(err, pgErr) {

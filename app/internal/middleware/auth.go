@@ -13,6 +13,7 @@ type Token string
 type Role string
 
 const UserRole ContextKey = "user_role"
+const UserID ContextKey = "user_id"
 
 const (
 	Client    Role = "client"
@@ -34,19 +35,20 @@ func (authmw *isAuthMiddleware) DoInMiddle(next http.Handler) http.Handler {
 			apierror.Write(w, noTokenErr, reqID, http.StatusUnauthorized)
 			return
 		}
-		role, err := authmw.s.GetRoleByToken(r.Context(), Token(token))
+		userIDRole, err := authmw.s.GetRoleByToken(r.Context(), Token(token))
 		if err != nil {
 			authmw.l.Errorf("internal error req_id=%s: %v", reqID, err)
 			apierror.Write(w, err, reqID, http.StatusInternalServerError)
 			return
 		}
-		if role != Client && role != Moderator {
+		if userIDRole.Role != Client && userIDRole.Role != Moderator {
 			noTokenErr := errors.New("not client or moderator")
 			authmw.l.Errorf("unauthorized req_id=%s: %v", reqID, noTokenErr)
 			apierror.Write(w, noTokenErr, reqID, http.StatusUnauthorized)
 			return
 		}
-		ctx := context.WithValue(r.Context(), UserRole, role)
+		ctx := context.WithValue(r.Context(), UserRole, userIDRole.Role)
+		ctx = context.WithValue(ctx, UserID, userIDRole.ID)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
@@ -71,18 +73,22 @@ func (modermw *isModerMiddleware) DoInMiddle(next http.Handler) http.Handler {
 			apierror.Write(w, noTokenErr, reqID, http.StatusUnauthorized)
 			return
 		}
-		role, err := modermw.s.GetRoleByToken(r.Context(), Token(token))
+		userIDRole, err := modermw.s.GetRoleByToken(r.Context(), Token(token))
 		if err != nil {
+			userNotFoundErr := errors.New("user not found")
 			modermw.l.Errorf("internal error req_id=%s: %v", reqID, err)
-			apierror.Write(w, err, reqID, http.StatusInternalServerError)
+			apierror.Write(w, userNotFoundErr, reqID, http.StatusInternalServerError)
 			return
 		}
-		if role != Moderator {
+		if userIDRole.Role != Moderator {
 			noTokenErr := errors.New("not a moderator")
 			modermw.l.Errorf("unauthorized req_id=%s: %v", reqID, noTokenErr)
 			apierror.Write(w, noTokenErr, reqID, http.StatusUnauthorized)
 			return
 		}
+		ctx := context.WithValue(r.Context(), UserRole, userIDRole.Role)
+		ctx = context.WithValue(ctx, UserID, userIDRole.ID)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

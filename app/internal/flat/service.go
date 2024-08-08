@@ -2,8 +2,10 @@ package flat
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Polyrom/houses_api/internal/middleware"
+	"github.com/Polyrom/houses_api/internal/modstatus"
 	"github.com/Polyrom/houses_api/pkg/logging"
 )
 
@@ -25,6 +27,19 @@ func (s *Service) Create(ctx context.Context, f CreateFlatDTO) (FlatDTO, error) 
 }
 
 func (s *Service) Update(ctx context.Context, f UpdateFlatStatusDTO) (FlatDTO, error) {
+	userID := ctx.Value(middleware.UserID).(string)
+	fldto := GetFlatByIDDTO{ID: f.ID, HouseID: f.HouseID}
+	storedFlat, err := s.repo.GetByID(ctx, fldto)
+	if err != nil {
+		return FlatDTO{}, err
+	}
+	if storedFlat.Status == modstatus.Created.String() {
+		return s.repo.UpdateWithNewMod(ctx, userID, f)
+	}
+	if storedFlat.Status == modstatus.OnModeration.String() && storedFlat.Moderator != userID {
+		wrongModErr := errors.New("already taken by another moderator")
+		return FlatDTO{}, wrongModErr
+	}
 	return s.repo.Update(ctx, f)
 }
 
