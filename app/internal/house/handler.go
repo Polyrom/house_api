@@ -2,7 +2,6 @@ package house
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/Polyrom/houses_api/internal/apierror"
@@ -31,11 +30,9 @@ func NewHandler(aumw middleware.Middleware, modmw middleware.Middleware, s *Serv
 
 func (h *handler) Register(r *mux.Router) {
 	r.Handle(createURL, h.modmw.DoInMiddle(http.HandlerFunc(h.Create))).Methods(http.MethodPost)
-	r.Handle(subscribeURL, h.aumw.DoInMiddle(http.HandlerFunc(h.Subscribe))).Methods(http.MethodPost)
 }
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
-	// FIXME: time is all zeroes
 	reqID := r.Context().Value(middleware.ContextKeyRequestID).(string)
 	var hdto CreateHouseDTO
 	err := json.NewDecoder(r.Body).Decode(&hdto)
@@ -64,10 +61,4 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		apierror.Write(w, err, reqID, http.StatusInternalServerError)
 		return
 	}
-}
-
-func (h *handler) Subscribe(w http.ResponseWriter, r *http.Request) {
-	// FIXME: implement
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprint(w, "house created")
 }
