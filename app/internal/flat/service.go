@@ -31,7 +31,8 @@ func (s *Service) Update(ctx context.Context, f UpdateFlatStatusDTO) (FlatDTO, e
 	fldto := GetFlatByIDDTO{ID: f.ID, HouseID: f.HouseID}
 	storedFlat, err := s.repo.GetByID(ctx, fldto)
 	if err != nil {
-		return FlatDTO{}, err
+		userNotFoundErr := errors.New("user not found")
+		return FlatDTO{}, userNotFoundErr
 	}
 	if storedFlat.Status == modstatus.Created.String() {
 		return s.repo.UpdateWithNewMod(ctx, userID, f)
