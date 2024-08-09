@@ -24,7 +24,7 @@ func NewClient(ctx context.Context, sc config.StorageConfig) (*pgxpool.Pool, err
 	var pool *pgxpool.Pool
 	var err error
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", sc.Username, sc.Password, sc.Host, sc.Port, sc.Database)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", sc.Username, sc.Password, sc.Host, sc.Port, sc.Database)
 	err = utils.Repeat(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()

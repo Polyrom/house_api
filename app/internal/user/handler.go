@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Polyrom/houses_api/internal/apierror"
@@ -80,14 +81,16 @@ func (h *handler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	storedUser, err := h.s.GetByID(r.Context(), uldto.UserID)
 	if err != nil {
+		notFoundErr := errors.New("user not found")
 		h.l.Errorf("user not found req_id=%s: %v", reqID, err)
-		apierror.Write(w, err, reqID, http.StatusNotFound)
+		apierror.Write(w, notFoundErr, reqID, http.StatusNotFound)
 		return
 	}
 	err = storedUser.VerifyPassword(uldto.Password)
 	if err != nil {
+		passwErr := errors.New("wrong password")
 		h.l.Errorf("wrong password req_id=%s: %v", reqID, err)
-		apierror.Write(w, err, reqID, http.StatusUnauthorized)
+		apierror.Write(w, passwErr, reqID, http.StatusUnauthorized)
 		return
 	}
 	token := storedUser.GenerateToken()
