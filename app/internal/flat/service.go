@@ -35,6 +35,10 @@ func (s *Service) Update(ctx context.Context, f UpdateFlatStatusDTO) (FlatDTO, e
 		return FlatDTO{}, userNotFoundErr
 	}
 	if storedFlat.Status == modstatus.Created.String() {
+		if f.Status != modstatus.OnModeration.String() {
+			canJumpStatusErr := errors.New("cannot approve/decline without moderation")
+			return FlatDTO{}, canJumpStatusErr
+		}
 		return s.repo.UpdateWithNewMod(ctx, userID, f)
 	}
 	if storedFlat.Status == modstatus.OnModeration.String() && storedFlat.Moderator != userID {
