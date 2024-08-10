@@ -11,7 +11,7 @@ services:
     volumes:
       - ./pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser"]
+      test: ["CMD-SHELL", "pg_isready -d mydb -U myuser"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,7 +21,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://myuser:myuser@db:5432/mydb?sslmode=disable
+      DATABASE_URL: postgres://myuser:mypassword@db:5432/mydb?sslmode=disable
     volumes:
       - ./migrations:/migrations
     command: -path /migrations -database postgres://myuser:mypassword@db:5432/mydb?sslmode=disable up
