@@ -102,6 +102,7 @@ func TestCreateFlat(t *testing.T) {
 		{name: "create flat bad request", args: args{ctx.ModeratorToken, flatReqBodyBadReq}, want: want{http.StatusBadRequest, expectedRespBadReq}, wantErr: false},
 		{name: "create flat invalid rooms number", args: args{ctx.ClientToken, flatReqBodyRoomsInvalid}, want: want{http.StatusBadRequest, expectedRespBadReq}, wantErr: false},
 		{name: "create flat invalid price", args: args{ctx.ClientToken, flatReqBodyPriceInvalid}, want: want{http.StatusBadRequest, expectedRespBadReq}, wantErr: false},
+		{name: "create flat invalid token", args: args{middleware.Token(""), flatReqBodyPriceInvalid}, want: want{http.StatusUnauthorized, expectedRespBadReq}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
