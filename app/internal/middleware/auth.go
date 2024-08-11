@@ -37,8 +37,9 @@ func (authmw *isAuthMiddleware) DoInMiddle(next http.Handler) http.Handler {
 		}
 		userIDRole, err := authmw.s.GetRoleByToken(r.Context(), Token(token))
 		if err != nil {
-			authmw.l.Errorf("internal error req_id=%s: %v", reqID, err)
-			apierror.Write(w, err, reqID, http.StatusInternalServerError)
+			userNotFoundErr := errors.New("user not found")
+			authmw.l.Errorf("unauthorized req_id=%s: %v", reqID, userNotFoundErr)
+			apierror.Write(w, userNotFoundErr, reqID, http.StatusUnauthorized)
 			return
 		}
 		if userIDRole.Role != Client && userIDRole.Role != Moderator {
@@ -76,8 +77,8 @@ func (modermw *isModerMiddleware) DoInMiddle(next http.Handler) http.Handler {
 		userIDRole, err := modermw.s.GetRoleByToken(r.Context(), Token(token))
 		if err != nil {
 			userNotFoundErr := errors.New("user not found")
-			modermw.l.Errorf("internal error req_id=%s: %v", reqID, err)
-			apierror.Write(w, userNotFoundErr, reqID, http.StatusInternalServerError)
+			modermw.l.Errorf("unauthorized req_id=%s: %v", reqID, err)
+			apierror.Write(w, userNotFoundErr, reqID, http.StatusUnauthorized)
 			return
 		}
 		if userIDRole.Role != Moderator {
